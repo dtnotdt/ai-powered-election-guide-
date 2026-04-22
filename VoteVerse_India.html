@@ -1,0 +1,2095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoteVerse India - Interactive Election Assistant</title>
+<meta name="description" content="VoteVerse India is an interactive election education platform. Learn to vote, simulate EVMs, find polling booths with Google Maps, and explore Indian democracy.">
+<meta name="theme-color" content="#FF9933">
+
+<!-- Preconnect for performance -->
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://maps.googleapis.com">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha512-dLRnLzD6VDi8VzMOCxpMSHjrnMCOLk7MK0MWJpAGPBs0BalCMFqlfeXjuKMLvITMRp8ACl8eGPSk1SO3hKPNg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- React & ReactDOM -->
+<script crossorigin="anonymous" src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin="anonymous" src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<!-- Babel for JSX -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Framer Motion -->
+<script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+<!-- Google Maps JavaScript API -->
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places&callback=onGoogleMapsReady"></script>
+<!-- Google Translate Element -->
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow-x: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Vibrant Indian Color Palette */
+:root {
+  --saffron: #FF9933;
+  --white: #FFFFFF;
+  --green: #138808;
+  --navy-blue: #000080;
+  --ashoka-blue: #000080;
+  --vibrant-purple: #9b59b6;
+  --vibrant-pink: #e91e63;
+  --vibrant-cyan: #00bcd4;
+  --vibrant-orange: #ff5722;
+}
+
+/* Glassmorphism Card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Floating Animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.floating { animation: float 3s ease-in-out infinite; }
+.pulsing { animation: pulse 2s ease-in-out infinite; }
+
+/* 3D Canvas Container */
+#three-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Main App Container */
+#app-root {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+}
+
+/* Landing Overlay */
+.landing-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255,153,51,0.9), rgba(19,136,8,0.9), rgba(0,0,128,0.9));
+  background-size: 400% 400%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+.landing-title {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-weight: 900;
+  background: linear-gradient(45deg, #FF9933, #FFFFFF, #138808);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 20px;
+  text-align: center;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.landing-subtitle {
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  color: white;
+  text-align: center;
+  margin-bottom: 40px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.landing-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+}
+
+.landing-btn {
+  padding: 15px 40px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-btn:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s;
+}
+
+.landing-btn:hover:before {
+  left: 100%;
+}
+
+.landing-btn:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #FF9933, #FF5722);
+  color: white;
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #138808, #00bcd4);
+  color: white;
+}
+
+.btn-tertiary {
+  background: linear-gradient(135deg, #000080, #9b59b6);
+  color: white;
+}
+
+/* Main Content Sections */
+.main-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.section {
+  margin-bottom: 40px;
+}
+
+.section-title {
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  color: white;
+  margin-bottom: 30px;
+  text-align: center;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Story Mode Cards */
+.story-container {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding: 20px 0;
+  scroll-snap-type: x mandatory;
+}
+
+.story-card {
+  min-width: 300px;
+  scroll-snap-align: start;
+  background: linear-gradient(135deg, rgba(255,153,51,0.3), rgba(19,136,8,0.3));
+  border-radius: 20px;
+  padding: 30px;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255,255,255,0.3);
+  transition: transform 0.3s ease;
+}
+
+.story-card:hover {
+  transform: scale(1.05);
+}
+
+.story-icon {
+  font-size: 4rem;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.story-title {
+  font-size: 1.5rem;
+  color: white;
+  font-weight: 700;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.story-desc {
+  color: rgba(255,255,255,0.9);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* Reel Container */
+.reel-container {
+  max-width: 500px;
+  margin: 0 auto;
+  height: 600px;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.2);
+}
+
+.reel-card {
+  height: 600px;
+  scroll-snap-align: start;
+  background: linear-gradient(135deg, #e91e63, #9b59b6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.reel-card:nth-child(2) {
+  background: linear-gradient(135deg, #00bcd4, #000080);
+}
+
+.reel-card:nth-child(3) {
+  background: linear-gradient(135deg, #FF9933, #FF5722);
+}
+
+.reel-emoji {
+  font-size: 6rem;
+  margin-bottom: 30px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.reel-text {
+  font-size: 1.5rem;
+  color: white;
+  text-align: center;
+  font-weight: 600;
+  line-height: 1.8;
+}
+
+/* EVM Simulator */
+.evm-container {
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+  border-radius: 30px;
+  padding: 40px;
+  max-width: 800px;
+  margin: 0 auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+
+.evm-screen {
+  background: #1a1a1a;
+  border-radius: 10px;
+  padding: 30px;
+  margin-bottom: 30px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #444;
+}
+
+.evm-display-text {
+  color: #00ff00;
+  font-family: 'Courier New', monospace;
+  font-size: 1.5rem;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.evm-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px;
+}
+
+.evm-button {
+  padding: 20px;
+  border-radius: 15px;
+  border: none;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.party-1 { background: linear-gradient(135deg, #FF9933, #FF5722); color: white; }
+.party-2 { background: linear-gradient(135deg, #138808, #00bcd4); color: white; }
+.party-3 { background: linear-gradient(135deg, #000080, #9b59b6); color: white; }
+.party-4 { background: linear-gradient(135deg, #e91e63, #f06292); color: white; }
+
+.evm-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.evm-button:active {
+  transform: scale(0.95);
+}
+
+.confirm-light {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ff0000;
+  margin: 20px auto;
+  box-shadow: 0 0 20px rgba(255,0,0,0.5);
+}
+
+.confirm-light.active {
+  background: #00ff00;
+  box-shadow: 0 0 30px rgba(0,255,0,0.8);
+  animation: pulse 0.5s ease-in-out 3;
+}
+
+/* Impact Simulator */
+.impact-controls {
+  background: rgba(255,255,255,0.2);
+  padding: 30px;
+  border-radius: 20px;
+  margin-bottom: 30px;
+}
+
+.slider-container {
+  margin: 20px 0;
+}
+
+.slider-label {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.slider {
+  width: 100%;
+  height: 10px;
+  border-radius: 5px;
+  outline: none;
+  background: rgba(255,255,255,0.3);
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #FF9933;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(255,153,51,0.5);
+}
+
+.chart-container {
+  background: rgba(255,255,255,0.9);
+  border-radius: 20px;
+  padding: 30px;
+}
+
+/* AI Chatbot */
+.chatbot-container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: rgba(255,255,255,0.95);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.chat-header {
+  background: linear-gradient(135deg, #FF9933, #138808);
+  padding: 20px;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.chat-messages {
+  height: 400px;
+  overflow-y: auto;
+  padding: 20px;
+  background: #f5f5f5;
+}
+
+.chat-message {
+  margin-bottom: 15px;
+  padding: 15px;
+  border-radius: 15px;
+  max-width: 80%;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.user-message {
+  background: linear-gradient(135deg, #000080, #9b59b6);
+  color: white;
+  margin-left: auto;
+  text-align: right;
+}
+
+.bot-message {
+  background: linear-gradient(135deg, #00bcd4, #138808);
+  color: white;
+}
+
+.chat-input-container {
+  display: flex;
+  padding: 20px;
+  background: white;
+  border-top: 1px solid #ddd;
+}
+
+.chat-input {
+  flex: 1;
+  padding: 15px;
+  border: 2px solid #ddd;
+  border-radius: 25px;
+  font-size: 1rem;
+  outline: none;
+}
+
+.chat-send-btn {
+  margin-left: 10px;
+  padding: 15px 30px;
+  background: linear-gradient(135deg, #FF9933, #FF5722);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.chat-send-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Checklist Tracker */
+.checklist-container {
+  background: rgba(255,255,255,0.2);
+  padding: 30px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  margin-bottom: 15px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 15px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.checklist-item:hover {
+  background: rgba(255,255,255,0.4);
+  transform: translateX(10px);
+}
+
+.checklist-icon {
+  font-size: 2rem;
+  margin-right: 20px;
+}
+
+.checklist-text {
+  flex: 1;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.checklist-status {
+  font-size: 1.5rem;
+}
+
+/* Maps Container */
+.maps-container {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.maps-search {
+  padding: 20px;
+  background: linear-gradient(135deg, #FF9933, #138808);
+}
+
+.maps-input {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  outline: none;
+}
+
+#map {
+  width: 100%;
+  height: 400px;
+}
+
+/* Voice Assistant */
+.voice-container {
+  text-align: center;
+  padding: 40px;
+}
+
+.voice-btn {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e91e63, #9b59b6);
+  border: none;
+  color: white;
+  font-size: 4rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 15px 40px rgba(233,30,99,0.4);
+}
+
+.voice-btn:hover {
+  transform: scale(1.1);
+}
+
+.voice-btn:active {
+  transform: scale(0.9);
+}
+
+.voice-btn.listening {
+  animation: pulse 1s ease-in-out infinite;
+  background: linear-gradient(135deg, #00ff00, #00bcd4);
+}
+
+.voice-output {
+  margin-top: 30px;
+  padding: 20px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 15px;
+  color: white;
+  font-size: 1.2rem;
+  min-height: 100px;
+}
+
+/* Badge System */
+.badges-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px;
+}
+
+.badge {
+  background: rgba(255,255,255,0.2);
+  padding: 20px;
+  border-radius: 15px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.badge.unlocked {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  animation: pulse 1s ease-in-out 3;
+}
+
+.badge-icon {
+  font-size: 3rem;
+  margin-bottom: 10px;
+}
+
+.badge-name {
+  color: white;
+  font-weight: 600;
+}
+
+/* Navigation */
+.floating-nav {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.95);
+  border-radius: 50px;
+  padding: 10px 20px;
+  display: flex;
+  gap: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  z-index: 1000;
+}
+
+.nav-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 25px;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.nav-btn:hover {
+  background: rgba(255,153,51,0.2);
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, #FF9933, #FF5722);
+  color: white;
+}
+
+/* Language Toggle */
+.lang-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 25px;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  z-index: 1000;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Particles Background */
+.particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: floatParticle 15s infinite;
+}
+
+@keyframes floatParticle {
+  0% { transform: translate(0, 100vh) scale(0); }
+  100% { transform: translate(100px, -100vh) scale(1); }
+}
+
+/* Loading Spinner */
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(255,255,255,0.3);
+  border-top: 5px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .landing-buttons { flex-direction: column; }
+  .story-container { padding: 10px; }
+  .evm-buttons { grid-template-columns: 1fr; }
+  .floating-nav { 
+    flex-wrap: wrap;
+    padding: 10px;
+    gap: 8px;
+  }
+  .nav-btn {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Hidden class */
+.hidden { display: none !important; }
+
+/* Accessibility: Skip Link */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #FF9933;
+  color: #000;
+  padding: 12px 24px;
+  border-radius: 0 0 10px 10px;
+  font-weight: 700;
+  z-index: 10000;
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+.skip-link:focus {
+  top: 0;
+}
+
+/* Accessibility: Focus visible outlines */
+*:focus-visible {
+  outline: 3px solid #FF9933;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Accessibility: Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Accessibility: Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Mode Toggle */
+.mode-toggle {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 25px;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  z-index: 1000;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* ==================== CINEMATIC STORY MODE ==================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+
+.cinematic-container {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  z-index: 500;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background: #0f0c29;
+}
+
+.cinematic-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #FF9933, #FFFFFF, #138808);
+  z-index: 2000;
+  box-shadow: 0 0 20px rgba(255, 153, 51, 0.8);
+}
+
+.cinematic-dots {
+  position: fixed;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cinematic-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.4);
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cinematic-dot.active {
+  background: #FF9933;
+  border-color: #FF9933;
+  transform: scale(1.5);
+  box-shadow: 0 0 20px rgba(255,153,51,0.8);
+}
+
+.cinematic-scene {
+  width: 100%;
+  height: 100vh;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 60px 30px;
+}
+
+/* Gradients for scenes */
+.scene-intro { background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); }
+.scene-register { background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); }
+.scene-booth { background: linear-gradient(135deg, #0d1b2a, #1b263b, #415a77); }
+.scene-voting { background: linear-gradient(135deg, #1a0a2e, #2d1b69, #44318d); }
+.scene-after { background: linear-gradient(135deg, #0a192f, #0d2847, #134074); }
+.scene-results { background: linear-gradient(135deg, #1b0a28, #2d1f3d, #4a1942); }
+
+/* Typography */
+.cin-heading {
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 900;
+  color: white;
+  text-align: center;
+  line-height: 1.15;
+  margin-bottom: 16px;
+  letter-spacing: -1px;
+}
+
+.cin-subtext {
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  color: rgba(255,255,255,0.6);
+  text-align: center;
+  max-width: 550px;
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+.cin-highlight {
+  background: linear-gradient(90deg, #FF9933, #e91e63);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 900;
+}
+
+/* Visual Elements */
+.aarav-avatar {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FF9933, #e91e63);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 5rem;
+  box-shadow: 0 0 60px rgba(255,153,51,0.4), 0 0 120px rgba(233,30,99,0.15);
+}
+
+.cin-form-step {
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 18px 28px;
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: white;
+  font-size: 1.05rem;
+  width: 100%;
+  max-width: 420px;
+}
+
+.cin-map-box {
+  width: 90%;
+  max-width: 480px;
+  height: 320px;
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(135deg, #1a472a 0%, #2d5a27 40%, #1a472a 100%);
+  border: 2px solid rgba(255,255,255,0.08);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+}
+
+.cin-evm {
+  background: linear-gradient(180deg, #1c1c2e 0%, #111122 100%);
+  border-radius: 24px;
+  padding: 28px;
+  border: 2px solid rgba(255,255,255,0.08);
+  box-shadow: 0 0 80px rgba(100,0,255,0.15);
+  max-width: 380px;
+  width: 90%;
+}
+
+.cin-evm-screen {
+  background: #000;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 18px;
+  border: 1px solid #222;
+  text-align: center;
+  color: #00ff00;
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+  min-height: 60px;
+}
+
+.cin-evm-btn {
+  width: 100%;
+  padding: 14px;
+  margin: 5px 0;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.cin-evm-btn.glow-selected {
+  box-shadow: 0 0 25px rgba(255,153,51,0.5), 0 0 50px rgba(255,153,51,0.2);
+  transform: scale(1.05);
+}
+
+.cin-result-bars {
+  width: 100%;
+  max-width: 440px;
+}
+
+.cin-result-row {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cin-result-label {
+  color: white;
+  font-weight: 600;
+  min-width: 95px;
+  font-size: 0.9rem;
+}
+
+.cin-result-track {
+  flex: 1;
+  height: 26px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 13px;
+  overflow: hidden;
+}
+
+.cin-exit-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  padding: 10px 22px;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 25px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 2000;
+  transition: all 0.3s ease;
+}
+
+.cin-next-btn {
+  position: fixed;
+  bottom: 35px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 13px 36px;
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 50px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 2000;
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 0;
+}
+
+/* Animations */
+@keyframes confettifall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+}
+
+@media (max-width: 768px) {
+  .cinematic-dots { right: 12px; }
+  .cin-heading { font-size: 2.2rem; }
+  .aarav-avatar { width: 130px; height: 130px; font-size: 3.5rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Skip Navigation Link (Accessibility) -->
+<a href="#app-root" class="skip-link" id="skipNav">Skip to main content</a>
+
+<!-- Three.js Canvas (decorative) -->
+<canvas id="three-canvas" aria-hidden="true" role="presentation"></canvas>
+
+<!-- Particles Background (decorative) -->
+<div class="particles" id="particles" aria-hidden="true"></div>
+
+<!-- React App Root -->
+<div id="app-root" role="main"></div>
+
+<!-- Google Translate Widget -->
+<div id="google_translate_element" style="position:fixed;top:20px;right:20px;z-index:1001;"></div>
+
+<!-- Language Toggle -->
+<button class="lang-toggle" id="langToggle" aria-label="Toggle language between English and Hindi" style="right:200px;">🇮🇳 हिंदी</button>
+
+<!-- Mode Toggle -->
+<button class="mode-toggle" id="modeToggle" aria-label="Toggle between simple and fast mode">⚡ Fast Mode</button>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+const { motion, AnimatePresence, useScroll, useTransform } = window.Motion;
+
+/**
+ * Sanitizes user input to prevent XSS attacks.
+ * Strips HTML tags and limits string length.
+ * @param {string} str - Raw user input
+ * @param {number} maxLen - Maximum allowed length (default: 200)
+ * @returns {string} Sanitized string
+ */
+function sanitizeInput(str, maxLen = 200) {
+  if (!str) return '';
+  return String(str).replace(/[<>]/g, '').replace(/javascript:/gi, '').trim().substring(0, maxLen);
+}
+
+/** Initialize Google Translate widget */
+window.googleTranslateElementInit = function() {
+  if (typeof google !== 'undefined' && google.translate) {
+    new google.translate.TranslateElement({
+      pageLanguage: 'en',
+      includedLanguages: 'en,hi,ta,te,bn,mr,gu,kn,ml,pa,ur',
+      layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+      autoDisplay: false
+    }, 'google_translate_element');
+  }
+};
+
+/** Google Maps ready callback */
+window.onGoogleMapsReady = function() {
+  window._googleMapsLoaded = true;
+  console.log('Google Maps API loaded successfully');
+};
+
+// ==================== MAIN APP COMPONENT ====================
+function VoteVerseApp() {
+  const [currentScreen, setCurrentScreen] = useState('landing');
+  const [language, setLanguage] = useState('en');
+  const [mode, setMode] = useState('simple'); // simple or fast
+  const [checklist, setChecklist] = useState({
+    register: false,
+    checkId: false,
+    findBooth: false,
+    vote: false
+  });
+  const [badges, setBadges] = useState({
+    firstStep: false,
+    learner: false,
+    voter: false,
+    expert: false
+  });
+  const [evmVote, setEvmVote] = useState(null);
+  const [chatMessages, setChatMessages] = useState([
+    { type: 'bot', text: 'Namaste! 🙏 I\'m your VoteVerse AI assistant. Ask me anything about voting!' }
+  ]);
+  const [userLocation, setUserLocation] = useState('');
+  const [voiceListening, setVoiceListening] = useState(false);
+  const [voiceOutput, setVoiceOutput] = useState('');
+
+  // Toggle Language
+  useEffect(() => {
+    document.getElementById('langToggle').onclick = () => {
+      setLanguage(lang => lang === 'en' ? 'hi' : 'en');
+    };
+    document.getElementById('modeToggle').onclick = () => {
+      setMode(m => m === 'simple' ? 'fast' : 'simple');
+    };
+  }, []);
+
+  return (
+    <>
+      {currentScreen === 'landing' && <LandingScreen setScreen={setCurrentScreen} />}
+      {currentScreen === 'story' && <StoryMode setScreen={setCurrentScreen} checklist={checklist} setChecklist={setChecklist} setBadges={setBadges} />}
+      {currentScreen === 'reels' && <ReelsMode setScreen={setCurrentScreen} />}
+      {currentScreen === 'evm' && <EVMSimulator setScreen={setCurrentScreen} evmVote={evmVote} setEvmVote={setEvmVote} setBadges={setBadges} />}
+      {currentScreen === 'impact' && <ImpactSimulator setScreen={setCurrentScreen} />}
+      {currentScreen === 'chat' && <ChatBot setScreen={setCurrentScreen} messages={chatMessages} setMessages={setChatMessages} />}
+      {currentScreen === 'checklist' && <ChecklistTracker setScreen={setCurrentScreen} checklist={checklist} setChecklist={setChecklist} />}
+      {currentScreen === 'maps' && <MapsLocation setScreen={setCurrentScreen} userLocation={userLocation} setUserLocation={setUserLocation} />}
+      {currentScreen === 'voice' && <VoiceAssistant setScreen={setCurrentScreen} listening={voiceListening} setListening={setVoiceListening} output={voiceOutput} setOutput={setVoiceOutput} />}
+      {currentScreen === 'badges' && <BadgesScreen setScreen={setCurrentScreen} badges={badges} />}
+      
+      {currentScreen !== 'landing' && <FloatingNav setScreen={setCurrentScreen} current={currentScreen} />}
+    </>
+  );
+}
+
+// ==================== LANDING SCREEN ====================
+function LandingScreen({ setScreen }) {
+  return (
+    <div className="landing-overlay">
+      <h1 className="landing-title">VoteVerse India</h1>
+      <p className="landing-subtitle">Your Interactive Journey to Understanding Democracy 🗳️</p>
+      <div className="landing-buttons">
+        <button className="landing-btn btn-cinematic" onClick={() => setScreen('story')} style={{ transform: 'scale(1.1)', margin: '0 10px' }}>
+          🎬 Cinematic Story Mode
+        </button>
+        <button className="landing-btn btn-secondary" onClick={() => setScreen('evm')}>
+          ⚡ Try EVM Simulator
+        </button>
+        <button className="landing-btn btn-tertiary" onClick={() => setScreen('chat')}>
+          🤖 Ask AI Assistant
+        </button>
+      </div>
+      <div style={{ marginTop: '40px', display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <button className="landing-btn btn-secondary" onClick={() => setScreen('reels')} style={{ fontSize: '0.9rem', padding: '12px 30px' }}>
+          📱 Learn (Reels Style)
+        </button>
+        <button className="landing-btn btn-tertiary" onClick={() => setScreen('maps')} style={{ fontSize: '0.9rem', padding: '12px 30px' }}>
+          📍 Find Polling Booth
+        </button>
+        <button className="landing-btn btn-primary" onClick={() => setScreen('voice')} style={{ fontSize: '0.9rem', padding: '12px 30px' }}>
+          🎤 Voice Assistant
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ==================== STORY MODE ====================
+function StoryMode({ setScreen, checklist, setChecklist, setBadges }) {
+  const [activeScene, setActiveScene] = useState(0);
+  const containerRef = useRef(null);
+
+  // Background Audio
+  const bgMusic = useRef(null);
+  
+  useEffect(() => {
+    // We use a silent/very soft ambient track to create immersion (using standard Web Audio or Audio object)
+    bgMusic.current = new Audio('https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3');
+    bgMusic.current.volume = 0.05;
+    bgMusic.current.loop = true;
+    bgMusic.current.play().catch(e => console.log('Audio autoplay blocked until interaction'));
+    
+    return () => {
+      if (bgMusic.current) {
+        bgMusic.current.pause();
+        bgMusic.current = null;
+      }
+    };
+  }, []);
+
+  const handleScroll = (e) => {
+    const scrollTop = e.target.scrollTop;
+    const height = window.innerHeight;
+    const newScene = Math.round(scrollTop / height);
+    if (newScene !== activeScene) {
+      setActiveScene(newScene);
+      // Play a subtle sound on scene change if desired
+      
+      // Update checklist progress based on scene
+      if (newScene >= 1) {
+        setChecklist(prev => ({ ...prev, register: true }));
+        setBadges(prev => ({ ...prev, firstStep: true }));
+      }
+      if (newScene >= 2) setChecklist(prev => ({ ...prev, checkId: true, findBooth: true }));
+      if (newScene >= 3) {
+        setChecklist(prev => ({ ...prev, vote: true }));
+        setBadges(prev => ({ ...prev, voter: true, learner: true }));
+      }
+    }
+  };
+
+  const scrollToScene = (index) => {
+    if (containerRef.current) {
+      containerRef.current.scrollTo({
+        top: index * window.innerHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Animation Variants
+  const fadeIn = {
+    hidden: { opacity: 0, y: 50 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+  };
+
+  const scaleIn = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: { opacity: 1, scale: 1, transition: { duration: 0.8, delay: 0.2, ease: "easeOut" } }
+  };
+
+  return (
+    <div className="cinematic-container" ref={containerRef} onScroll={handleScroll}>
+      <button className="cin-exit-btn" onClick={() => setScreen('landing')}>← Exit Story</button>
+      
+      {/* Progress Bar */}
+      <div className="cinematic-progress" style={{ width: `${(activeScene / 5) * 100}%` }}></div>
+
+      {/* Navigation Dots */}
+      <div className="cinematic-dots">
+        {[0, 1, 2, 3, 4, 5].map(i => (
+          <div 
+            key={i} 
+            className={`cinematic-dot ${activeScene === i ? 'active' : ''}`}
+            onClick={() => scrollToScene(i)}
+            title={`Scene ${i + 1}`}
+          />
+        ))}
+      </div>
+
+      {/* SCENE 0: Introduction */}
+      <div className="cinematic-scene scene-intro">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: false, amount: 0.5 }} variants={fadeIn} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div className="aarav-avatar">
+            👦🏽
+            <div className="aarav-glow-ring"></div>
+          </div>
+          <h2 className="cin-heading" style={{ marginTop: '40px' }}>Meet <span className="cin-highlight">Aarav</span></h2>
+          <p className="cin-subtext">This is his first time voting.<br/>Follow his journey into democracy.</p>
+        </motion.div>
+        {activeScene === 0 && (
+          <button className="cin-next-btn" onClick={() => scrollToScene(1)}>Begin Journey ↓</button>
+        )}
+      </div>
+
+      {/* SCENE 1: Registration */}
+      <div className="cinematic-scene scene-register">
+        <div className="cin-deco-1 cin-scene-deco"></div>
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: false, amount: 0.5 }} variants={fadeIn} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', zIndex: 10 }}>
+          <h2 className="cin-heading">Step 1: Registration</h2>
+          <p className="cin-subtext">First, he checks if he is registered on the electoral roll.</p>
+          
+          <motion.div variants={scaleIn} style={{ marginTop: '40px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div className="cin-form-step">
+              <div className="cin-form-icon">💻</div>
+              <div>Visit <b>voters.eci.gov.in</b></div>
+            </div>
+            <div className="cin-form-step">
+              <div className="cin-form-icon">📝</div>
+              <div>Fill out <b>Form 6</b></div>
+            </div>
+            <div className="cin-form-step">
+              <div className="cin-form-icon">📸</div>
+              <div>Upload Address Proof & Photo</div>
+            </div>
+          </motion.div>
+        </motion.div>
+        {activeScene === 1 && <button className="cin-next-btn" onClick={() => scrollToScene(2)}>Next Step ↓</button>}
+      </div>
+
+      {/* SCENE 2: Finding Booth */}
+      <div className="cinematic-scene scene-booth">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: false, amount: 0.5 }} variants={fadeIn} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', zIndex: 10 }}>
+          <h2 className="cin-heading">Step 2: Find Booth</h2>
+          <p className="cin-subtext">Election day is here! Where does Aarav go?</p>
+          
+          <motion.div variants={scaleIn} className="cin-map-box" style={{ marginTop: '40px' }}>
+            <div className="cin-map-grid"></div>
+            <div className="cin-map-roads">
+              <div className="cin-map-road" style={{ top: '40%', left: 0, width: '100%', height: '8px' }}></div>
+              <div className="cin-map-road" style={{ top: 0, left: '50%', width: '8px', height: '100%' }}></div>
+            </div>
+            <div className="cin-map-pulse"></div>
+            <motion.div 
+              initial={{ opacity: 0, y: -100 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, type: 'spring', bounce: 0.5 }}
+              className="cin-map-marker visible"
+            >
+              📍
+            </motion.div>
+          </motion.div>
+        </motion.div>
+        {activeScene === 2 && <button className="cin-next-btn" onClick={() => scrollToScene(3)}>Next Step ↓</button>}
+      </div>
+
+      {/* SCENE 3: Voting (EVM) */}
+      <div className="cinematic-scene scene-voting">
+        <div className="cin-deco-2 cin-scene-deco"></div>
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: false, amount: 0.5 }} variants={fadeIn} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', zIndex: 10 }}>
+          <h2 className="cin-heading">Step 3: The EVM</h2>
+          <p className="cin-subtext">Aarav reaches the booth, verifies his ID, and enters the voting compartment.</p>
+          
+          <motion.div variants={scaleIn} className="cin-evm" style={{ marginTop: '40px' }}>
+            <div className="cin-evm-screen">READY FOR VOTE</div>
+            <div className="cin-evm-glow-border active">
+              <button className="cin-evm-btn" style={{ background: '#FF9933' }}>Party A 🌸</button>
+            </div>
+            <button className="cin-evm-btn" style={{ background: '#138808' }}>Party B 🖐️</button>
+            <button className="cin-evm-btn" style={{ background: '#000080' }}>Party C ⚡</button>
+          </motion.div>
+        </motion.div>
+        {activeScene === 3 && <button className="cin-next-btn" onClick={() => scrollToScene(4)}>Next Step ↓</button>}
+      </div>
+
+      {/* SCENE 4: After Voting */}
+      <div className="cinematic-scene scene-after">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: false, amount: 0.5 }} variants={fadeIn} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+          <h2 className="cin-heading">Secure Storage</h2>
+          <p className="cin-subtext">His vote is securely stored and verified via VVPAT.</p>
+
+          <div className="cin-vote-path">
+            <motion.div className="cin-path-line visible" initial={{ width: 0 }} whileInView={{ width: '100%' }} transition={{ duration: 2 }}></motion.div>
+            <div className="cin-path-dot-start"></div>
+            <div className="cin-path-dot-end"></div>
+            <div className="cin-traveling-dot"></div>
+          </div>
+          
+          <motion.div variants={scaleIn} className="cin-shield">
+            <div className="cin-shield-body">🛡️</div>
+          </motion.div>
+        </motion.div>
+        {activeScene === 4 && <button className="cin-next-btn" onClick={() => scrollToScene(5)}>View Results ↓</button>}
+      </div>
+
+      {/* SCENE 5: Results */}
+      <div className="cinematic-scene scene-results">
+        {activeScene === 5 && (
+          <div className="cin-confetti-container">
+            {Array.from({ length: 50 }).map((_, i) => (
+              <div 
+                key={i} 
+                className="cin-confetti" 
+                style={{ 
+                  left: `${Math.random() * 100}%`,
+                  background: ['#FF9933', '#138808', '#00bcd4', '#e91e63'][Math.floor(Math.random() * 4)],
+                  animationDuration: `${Math.random() * 2 + 2}s`,
+                  animationDelay: `${Math.random() * 2}s`
+                }}
+              />
+            ))}
+          </div>
+        )}
+        
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: false, amount: 0.5 }} variants={fadeIn} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', zIndex: 10 }}>
+          <h2 className="cin-heading">Every Vote Counts</h2>
+          <p className="cin-subtext" style={{ marginBottom: '40px' }}>Aarav just shaped the future of his country.</p>
+          
+          <div className="cin-result-bars">
+            <div className="cin-result-row">
+              <div className="cin-result-label">Party A</div>
+              <div className="cin-result-track">
+                <motion.div className="cin-result-fill" style={{ background: '#FF9933' }} initial={{ width: 0 }} whileInView={{ width: '85%' }} transition={{ duration: 1.5, delay: 0.2 }}>85M</motion.div>
+              </div>
+            </div>
+            <div className="cin-result-row">
+              <div className="cin-result-label">Party B</div>
+              <div className="cin-result-track">
+                <motion.div className="cin-result-fill" style={{ background: '#138808' }} initial={{ width: 0 }} whileInView={{ width: '65%' }} transition={{ duration: 1.5, delay: 0.4 }}>65M</motion.div>
+              </div>
+            </div>
+            <div className="cin-result-row">
+              <div className="cin-result-label">Party C</div>
+              <div className="cin-result-track">
+                <motion.div className="cin-result-fill" style={{ background: '#000080' }} initial={{ width: 0 }} whileInView={{ width: '42%' }} transition={{ duration: 1.5, delay: 0.6 }}>42M</motion.div>
+              </div>
+            </div>
+          </div>
+          
+          <button className="cin-replay-btn" onClick={() => setScreen('evm')}>
+            Try Interactive EVM Next ⚡
+          </button>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== REELS MODE ====================
+function ReelsMode({ setScreen }) {
+  const reels = [
+    { emoji: '🗳️', text: 'What is Voting?\n\nVoting is your fundamental right to choose leaders who represent you in government. Every vote counts!' },
+    { emoji: '⚙️', text: 'How EVM Works?\n\nElectronic Voting Machine has 2 parts:\n1. Control Unit (with polling officer)\n2. Ballot Unit (where you press button)\n\nYour vote is encrypted & stored securely!' },
+    { emoji: '💪', text: 'Why Your Vote Matters?\n\nIn 2019, some constituencies were won by just 500 votes!\n\nYour single vote can decide the future.\n\n#EveryVoteCounts' },
+    { emoji: '🎯', text: 'Quick Facts:\n\n✅ 900+ million eligible voters\n✅ 1 million+ polling stations\n✅ Largest democracy in the world\n✅ Free & fair elections' }
+  ];
+
+  return (
+    <div className="main-content">
+      <h2 className="section-title">📱 Learn Quick (Swipe Down)</h2>
+      <div className="reel-container">
+        {reels.map((reel, idx) => (
+          <div key={idx} className="reel-card">
+            <div className="reel-emoji">{reel.emoji}</div>
+            <p className="reel-text">{reel.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ==================== EVM SIMULATOR ====================
+function EVMSimulator({ setScreen, evmVote, setEvmVote, setBadges }) {
+  const [displayText, setDisplayText] = useState('Press any button to cast your vote');
+  const [confirmLight, setConfirmLight] = useState(false);
+  const [voted, setVoted] = useState(false);
+
+  const parties = [
+    { name: 'Party A - Development', class: 'party-1', symbol: '🌸' },
+    { name: 'Party B - Progress', class: 'party-2', symbol: '🖐️' },
+    { name: 'Party C - Unity', class: 'party-3', symbol: '⚡' },
+    { name: 'NOTA', class: 'party-4', symbol: '🚫' }
+  ];
+
+  const handleVote = (party) => {
+    if (voted) {
+      setDisplayText('You have already voted!');
+      return;
+    }
+
+    setDisplayText(`You selected: ${party.name}`);
+    setEvmVote(party);
+    
+    // Activate confirmation light
+    setTimeout(() => {
+      setConfirmLight(true);
+      const beep = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGGS57OihUBELTKXh8LJnHgU7k9n0zHkpBCh+zPLaizsKFmO26+mjTxEKTKXi8LJoHgU7k9j0zHksBCh+zPDaizsKFmS16+mjUBELTKXh8LJnHgU7k9j0zHkpBCh+zPLaizsKFmO26+mjTxEKTKXi8LJoHgU6k9j0zHksBCh+zPDaizwKFmS16+mjTxEKS6Xh8LJnHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxELTKPh8LJnHgU7k9j0zHksBCh+zPLaizsKFmS16+mjTxEKTKXh8LJnHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJnHgU7k9j0zHksBCh+zPLaizsKFmS16+mjUBELTKXh8LJnHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjUBEKTKXh8LJoHgU6k9j0zHksBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU6k9j0zHkpBCh+zPLaizsKFmO26+mjTxEKTKXi8LJoHgU7k9j0zHksBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHksBCh+zPLaizsKFmS16+mjTxEKS6Xh8LJoHgU7k9j0zHksBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHksBCh+zPLaizsKFmS16+mjTxEKTKXh8LJnHgU7k9j0zHksBCh+zPLaizsKFmO26+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJnHgU7k9j0zHksBCh+zPLaizwKFmS16+mjTxEKTKXi8LJoHgU6k9j0zHksBCh+zPLaizsKFmS16+mjTxELTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8LJoHgU7k9j0zHkpBCh+zPLaizsKFmS16+mjTxEKTKXh8A==');
+      beep.play().catch(e => console.log('Audio play failed'));
+      setDisplayText('✅ Vote Recorded Successfully!\n\nThank you for voting!');
+      setBadges(prev => ({ ...prev, voter: true }));
+      setVoted(true);
+    }, 500);
+
+    setTimeout(() => {
+      setConfirmLight(false);
+    }, 2500);
+  };
+
+  return (
+    <div className="main-content">
+      <h2 className="section-title">⚡ EVM Simulator</h2>
+      <div className="evm-container">
+        <div className="evm-screen">
+          <div className="evm-display-text">{displayText}</div>
+          <div className={`confirm-light ${confirmLight ? 'active' : ''}`}></div>
+        </div>
+        <div className="evm-buttons">
+          {parties.map((party, idx) => (
+            <button
+              key={idx}
+              className={`evm-button ${party.class}`}
+              onClick={() => handleVote(party)}
+            >
+              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>{party.symbol}</div>
+              {party.name}
+            </button>
+          ))}
+        </div>
+        <div style={{ marginTop: '30px', textAlign: 'center' }}>
+          <button 
+            className="landing-btn btn-secondary" 
+            onClick={() => {
+              setVoted(false);
+              setEvmVote(null);
+              setDisplayText('Press any button to cast your vote');
+              setConfirmLight(false);
+            }}
+            style={{ padding: '12px 30px', fontSize: '0.9rem' }}
+          >
+            🔄 Reset Simulator
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== IMPACT SIMULATOR ====================
+function ImpactSimulator({ setScreen }) {
+  const [totalVoters, setTotalVoters] = useState(1000000);
+  const [turnout, setTurnout] = useState(65);
+  const chartRef = useRef(null);
+  const chartInstance = useRef(null);
+
+  useEffect(() => {
+    if (chartRef.current) {
+      const ctx = chartRef.current.getContext('2d');
+      
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+
+      const actualVotes = (totalVoters * turnout) / 100;
+      const missedVotes = totalVoters - actualVotes;
+
+      chartInstance.current = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Voted', 'Did Not Vote'],
+          datasets: [{
+            data: [actualVotes, missedVotes],
+            backgroundColor: ['#138808', '#ff4444'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+              labels: {
+                font: { size: 14, weight: 'bold' },
+                padding: 20
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.label + ': ' + context.parsed.toLocaleString() + ' votes';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+      }
+    };
+  }, [totalVoters, turnout]);
+
+  return (
+    <div className="main-content">
+      <h2 className="section-title">📊 Vote Impact Simulator</h2>
+      <div className="impact-controls">
+        <div className="slider-container">
+          <div className="slider-label">Total Eligible Voters: {totalVoters.toLocaleString()}</div>
+          <input 
+            type="range" 
+            min="100000" 
+            max="10000000" 
+            step="100000"
+            value={totalVoters}
+            onChange={(e) => setTotalVoters(parseInt(e.target.value))}
+            className="slider"
+          />
+        </div>
+        <div className="slider-container">
+          <div className="slider-label">Voter Turnout: {turnout}%</div>
+          <input 
+            type="range" 
+            min="30" 
+            max="100" 
+            value={turnout}
+            onChange={(e) => setTurnout(parseInt(e.target.value))}
+            className="slider"
+          />
+        </div>
+        <div style={{ color: 'white', marginTop: '20px', fontSize: '1.1rem', textAlign: 'center' }}>
+          <strong>Actual Votes Cast: {((totalVoters * turnout) / 100).toLocaleString()}</strong>
+        </div>
+      </div>
+      <div className="chart-container">
+        <canvas ref={chartRef}></canvas>
+      </div>
+      <div style={{ marginTop: '20px', padding: '20px', background: 'rgba(255,255,255,0.2)', borderRadius: '15px' }}>
+        <p style={{ color: 'white', fontSize: '1.1rem', textAlign: 'center', lineHeight: '1.8' }}>
+          💡 <strong>Did you know?</strong><br/>
+          If voter turnout drops by just 10%, the election outcome can completely change!<br/>
+          <span style={{ fontSize: '1.3rem', color: '#FF9933' }}>Your vote is powerful! 🗳️</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ==================== CHATBOT ====================
+function ChatBot({ setScreen, messages, setMessages }) {
+  const [input, setInput] = useState('');
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(scrollToBottom, [messages]);
+
+  const knowledgeBase = {
+    'register': 'To register as a voter:\n1. Visit NVSP website\n2. Fill Form 6\n3. Upload documents (Age proof, Address proof, Photo)\n4. Submit online or at nearest ERO office\n5. Age must be 18+ on qualifying date',
+    'voter id': 'EPIC (Voter ID Card) is issued by Election Commission. You can apply online through NVSP portal. It usually takes 2-4 weeks. You can also vote using other IDs like Aadhaar, Passport, Driving License.',
+    'polling booth': 'Find your polling booth:\n1. Visit nvsp.in\n2. Enter EPIC number or details\n3. Get booth address and map\n4. Or SMS your EPIC number to 166 or 51969',
+    'evm': 'EVM (Electronic Voting Machine) has:\n✅ Control Unit (with officer)\n✅ Ballot Unit (where you vote)\n\nIt\'s tamper-proof, stores votes securely, and makes counting faster and more accurate!',
+    'vote': 'Voting process:\n1. Go to polling booth on election day\n2. Show valid ID\n3. Get inked on finger\n4. Press button on EVM for your candidate\n5. Confirmation light will glow\n6. Exit (voting is secret!)',
+    'age': 'You must be 18 years old on the qualifying date (usually Jan 1st) to register as a voter. No upper age limit!',
+    'documents': 'Required documents:\n📄 Age Proof: Birth certificate, School certificate, Passport\n📄 Address Proof: Aadhaar, Utility bill, Rent agreement\n📄 Recent passport-size photo',
+    'nota': 'NOTA = None Of The Above\nIf you don\'t want to vote for any candidate, you can choose NOTA. It\'s your right to reject all candidates!'
+  };
+
+  const handleSend = () => {
+    if (!input.trim()) return;
+
+    const userMessage = { type: 'user', text: input };
+    setMessages(prev => [...prev, userMessage]);
+
+    // Simple AI response (in real app, use Gemini API)
+    setTimeout(() => {
+      let botResponse = 'I\'m here to help! ';
+      const lowerInput = input.toLowerCase();
+      
+      for (let key in knowledgeBase) {
+        if (lowerInput.includes(key)) {
+          botResponse = knowledgeBase[key];
+          break;
+        }
+      }
+      
+      if (botResponse === 'I\'m here to help! ') {
+        botResponse += 'I can help you with:\n• Voter registration\n• Finding polling booth\n• EVM info\n• Voting process\n• Required documents\n\nWhat would you like to know?';
+      }
+
+      setMessages(prev => [...prev, { type: 'bot', text: botResponse }]);
+    }, 500);
+
+    setInput('');
+  };
+
+  return (
+    <div className="main-content">
+      <h2 className="section-title">🤖 AI Assistant</h2>
+      <div className="chatbot-container">
+        <div className="chat-header">VoteVerse AI - Myth Buster</div>
+        <div className="chat-messages">
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`chat-message ${msg.type}-message`}>
+              {msg.text}
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+        <div className="chat-input-container">
+          <input 
+            type="text"
+            className="chat-input"
+            placeholder="Ask me anything about voting..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+          />
+          <button className="chat-send-btn" onClick={handleSend}>Send</button>
+        </div>
+      </div>
+      <div style={{ marginTop: '20px', textAlign: 'center' }}>
+        <p style={{ color: 'white', fontSize: '0.9rem' }}>
+          💡 Try asking: "How to register?", "What is NOTA?", "Where is my booth?"
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ==================== CHECKLIST TRACKER ====================
+function ChecklistTracker({ setScreen, checklist, setChecklist }) {
+  const items = [
+    { key: 'register', icon: '📝', text: 'Register as Voter' },
+    { key: 'checkId', icon: '✅', text: 'Verify Voter ID' },
+    { key: 'findBooth', icon: '📍', text: 'Find Polling Booth' },
+    { key: 'vote', icon: '🗳️', text: 'Cast Your Vote' }
+  ];
+
+  const toggleItem = (key) => {
+    setChecklist(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const progress = (Object.values(checklist).filter(Boolean).length / 4) * 100;
+
+  return (
+    <div className="main-content">
+      <h2 className="section-title">✅ Your Progress Tracker</h2>
+      <div className="checklist-container">
+        <div style={{ marginBottom: '30px', textAlign: 'center' }}>
+          <div style={{ 
+            background: 'rgba(255,255,255,0.3)', 
+            borderRadius: '50px', 
+            height: '30px', 
+            overflow: 'hidden',
+            position: 'relative'
+          }}>
+            <div style={{
+              width: `${progress}%`,
+              height: '100%',
+              background: 'linear-gradient(90deg, #138808, #00bcd4)',
+              transition: 'width 0.5s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontWeight: '700'
+            }}>
+              {progress.toFixed(0)}%
+            </div>
+          </div>
+        </div>
+        {items.map((item, idx) => (
+          <div 
+            key={idx} 
+            className="checklist-item"
+            onClick={() => toggleItem(item.key)}
+          >
+            <span className="checklist-icon">{item.icon}</span>
+            <span className="checklist-text">{item.text}</span>
+            <span className="checklist-status">
+              {checklist[item.key] ? '✅' : '⏳'}
+            </span>
+          </div>
+        ))}
+      </div>
+      <div style={{ marginTop: '30px', textAlign: 'center' }}>
+        {progress === 100 && (
+          <div className="glass-card" style={{ maxWidth: '500px', margin: '0 auto' }}>
+            <h3 style={{ color: '#FFD700', fontSize: '2rem', marginBottom: '15px' }}>
+              🎉 Congratulations!
+            </h3>
+            <p style={{ color: 'white', fontSize: '1.1rem' }}>
+              You've completed all steps! You're ready to vote and make a difference! 🗳️
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==================== MAPS LOCATION ====================
+function MapsLocation({ setScreen, userLocation, setUserLocation }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [booths, setBooths] = useState([
+    { name: 'Booth 1 - Nehru Stadium', address: 'Connaught Place, New Delhi', distance: '2.3 km' },
+    { name: 'Booth 2 - Gandhi Bhawan', address: 'Karol Bagh, New Delhi', distance: '4.1 km' },
+    { name: 'Booth 3 - Tagore School', address: 'Dwarka, New Delhi', distance: '7.8 km' }
+  ]);
+
+  const handleSearch = () => {
+    // In real app, use Google Maps API
+    alert(`Searching polling booths near: ${searchQuery}`);
+  };
+
+  return (
+    <div className="main-content">
+      <h2 className="section-title">📍 Find Polling Booth</h2>
+      <div className="maps-container">
+        <div className="maps-search">
+          <input 
+            type="text"
+            className="maps-input"
+            placeholder="Enter your location or PIN code..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+          />
+        </div>
+        <div id="map" style={{ 
+          background: 'linear-gradient(135deg, #667eea, #764ba2)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          color: 'white',
+          fontSize: '1.2rem'
+        }}>
+          🗺️ Map will load here (Google Maps API)
+        </div>
+        <div style={{ padding: '20px' }}>
+          <h3 style={{ marginBottom: '15px', fontWeight: '700' }}>Nearby Polling Booths:</h3>
+          {booths.map((booth, idx) => (
+            <div key={idx} style={{
+              padding: '15px',
+              background: '#f5f5f5',
+              borderRadius: '10px',
+              marginBottom: '10px'
+            }}>
+              <div style={{ fontWeight: '700', marginBottom: '5px' }}>{booth.name}</div>
+              <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '5px' }}>{booth.address}</div>
+              <div style={{ fontSize: '0.85rem', color: '#FF9933', fontWeight: '600' }}>📍 {booth.distance} away</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== VOICE ASSISTANT ====================
+function VoiceAssistant({ setScreen, listening, setListening, output, setOutput }) {
+  const handleVoiceClick = () => {
+    if (!listening) {
+      setListening(true);
+      setOutput('🎤 Listening... Ask me anything!');
+
+      // Simulate voice recognition (in real app, use Web Speech API or Google Speech-to-Text)
+      setTimeout(() => {
+        const responses = [
+          'Your nearest polling booth is at Nehru Stadium, 2.3 km away.',
+          'To register as a voter, visit nvsp.in and fill Form 6.',
+          'You can vote using Voter ID, Aadhaar, Passport, or Driving License.',
+          'EVM is a secure electronic voting machine with Control Unit and Ballot Unit.'
+        ];
+        setOutput(responses[Math.floor(Math.random() * responses.length)]);
+        setListening(false);
+
+        // Text-to-Speech simulation
+        if ('speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(responses[0]);
+          utterance.lang = 'en-IN';
+          window.speechSynthesis.speak(utterance);
+        }
+      }, 2000);
+    }
+  };
+
+  return (
+    <div className="main-content">
+      <h2 className="section-title">🎤 Voice Assistant</h2>
+      <div className="voice-container">
+        <button 
+          className={`voice-btn ${listening ? 'listening' : ''}`}
+          onClick={handleVoiceClick}
+        >
+          🎤
+        </button>
+        <div style={{ marginTop: '20px', color: 'white', fontSize: '1.1rem' }}>
+          {listening ? 'Listening...' : 'Tap to speak'}
+        </div>
+        <div className="voice-output">
+          {output || 'Ask me: "Where do I vote?", "How to register?", "What is EVM?"'}
+        </div>
+      </div>
+      <div style={{ marginTop: '30px', textAlign: 'center' }}>
+        <div className="glass-card" style={{ maxWidth: '500px', margin: '0 auto' }}>
+          <h3 style={{ color: 'white', marginBottom: '15px' }}>Try These Commands:</h3>
+          <div style={{ color: 'rgba(255,255,255,0.9)', lineHeight: '2', fontSize: '0.95rem' }}>
+            ✅ "Where is my polling booth?"<br/>
+            ✅ "How do I register to vote?"<br/>
+            ✅ "What documents do I need?"<br/>
+            ✅ "Explain EVM"
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== BADGES SCREEN ====================
+function BadgesScreen({ setScreen, badges }) {
+  const badgeList = [
+    { key: 'firstStep', icon: '🎯', name: 'First Step', desc: 'Started your voting journey' },
+    { key: 'learner', icon: '📚', name: 'Quick Learner', desc: 'Learned about voting process' },
+    { key: 'voter', icon: '🗳️', name: 'Voter', desc: 'Completed EVM simulation' },
+    { key: 'expert', icon: '👑', name: 'Democracy Expert', desc: 'Completed all modules' }
+  ];
+
+  return (
+    <div className="main-content">
+      <h2 className="section-title">🏆 Your Badges</h2>
+      <div className="badges-container">
+        {badgeList.map((badge, idx) => (
+          <div 
+            key={idx} 
+            className={`badge ${badges[badge.key] ? 'unlocked' : ''}`}
+          >
+            <div className="badge-icon">{badge.icon}</div>
+            <div className="badge-name">{badge.name}</div>
+            <div style={{ 
+              fontSize: '0.75rem', 
+              color: badges[badge.key] ? 'white' : 'rgba(255,255,255,0.5)',
+              marginTop: '5px'
+            }}>
+              {badge.desc}
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '1.2rem' }}>
+              {badges[badge.key] ? '✅' : '🔒'}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ==================== FLOATING NAVIGATION ====================
+function FloatingNav({ setScreen, current }) {
+  const nav = [
+    { id: 'story', label: '🏠' },
+    { id: 'evm', label: '⚡' },
+    { id: 'chat', label: '🤖' },
+    { id: 'maps', label: '📍' },
+    { id: 'voice', label: '🎤' }
+  ];
+
+  return (
+    <div className="floating-nav">
+      {nav.map(item => (
+        <button
+          key={item.id}
+          className={`nav-btn ${current === item.id ? 'active' : ''}`}
+          onClick={() => setScreen(item.id)}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ==================== RENDER APP ====================
+ReactDOM.render(<VoteVerseApp />, document.getElementById('app-root'));
+</script>
+
+<!-- Three.js 3D Background -->
+<script>
+// Three.js Scene Setup
+const canvas = document.getElementById('three-canvas');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+camera.position.z = 5;
+
+// Particle system
+const particles = new THREE.BufferGeometry();
+const particleCount = 1500;
+const positions = new Float32Array(particleCount * 3);
+
+for (let i = 0; i < particleCount * 3; i++) {
+  positions[i] = (Math.random() - 0.5) * 50;
+}
+
+particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+const particleMaterial = new THREE.PointsMaterial({
+  color: 0xffffff,
+  size: 0.05,
+  transparent: true,
+  opacity: 0.8
+});
+
+const particleSystem = new THREE.Points(particles, particleMaterial);
+scene.add(particleSystem);
+
+// Rotating India Map (Simplified)
+const geometry = new THREE.SphereGeometry(1, 32, 32);
+const material = new THREE.MeshPhongMaterial({
+  color: 0xFF9933,
+  emissive: 0x138808,
+  wireframe: true
+});
+const sphere = new THREE.Mesh(geometry, material);
+scene.add(sphere);
+
+// Lighting
+const light = new THREE.PointLight(0xffffff, 1, 100);
+light.position.set(10, 10, 10);
+scene.add(light);
+
+const ambientLight = new THREE.AmbientLight(0x404040);
+scene.add(ambientLight);
+
+// Animation loop
+function animate() {
+  requestAnimationFrame(animate);
+  
+  sphere.rotation.y += 0.005;
+  particleSystem.rotation.y += 0.001;
+  particleSystem.rotation.x += 0.0005;
+  
+  renderer.render(scene, camera);
+}
+animate();
+
+// Handle resize
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Generate floating particles
+function createParticles() {
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 50; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    particle.style.width = Math.random() * 5 + 'px';
+    particle.style.height = particle.style.width;
+    particle.style.left = Math.random() * 100 + '%';
+    particle.style.animationDelay = Math.random() * 15 + 's';
+    particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+    container.appendChild(particle);
+  }
+}
+createParticles();
+</script>
+
+</body>
+</html>

@@ -1,3 +1,8 @@
-Dockerfile
-default.conf.template
-.dockerignore
+node_modules
+dist
+.git
+.gitignore
+*.md
+deploy.log
+VoteVerse_India.html
+tests.js

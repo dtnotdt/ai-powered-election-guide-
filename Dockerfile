@@ -1,11 +1,14 @@
+# Build stage
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --production=false
+COPY . .
+RUN npm run build
+
+# Production stage
 FROM nginx:alpine
-
-# Copy the HTML file to the Nginx web root
-COPY . /usr/share/nginx/html/
-
-# Copy the nginx template
-COPY default.conf.template /etc/nginx/templates/
-
-# Cloud Run sets the PORT environment variable (default is 8080)
-# This will be substituted into the nginx config by the template
-ENV PORT=8080
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY default.conf.template /etc/nginx/templates/default.conf.template
+EXPOSE 8080
+CMD ["nginx", "-g", "daemon off;"]

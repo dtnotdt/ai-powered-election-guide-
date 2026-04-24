@@ -1,3 +1,4 @@
+"use client";
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Chart, ArcElement, Tooltip, Legend, DoughnutController } from 'chart.js';

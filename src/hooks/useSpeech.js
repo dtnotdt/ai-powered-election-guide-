@@ -10,7 +10,7 @@ export function useSpeech() {
   const recognitionRef = useRef(null);
 
   const startListening = useCallback(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
     if (!SpeechRecognition) {
       setTranscript('Speech recognition is not supported in your browser.');
       return;

@@ -1,3 +1,4 @@
+"use client";
 import { motion } from 'framer-motion';
 import { CHECKLIST_ITEMS } from '../../utils/constants';
 import { staggerContainer, staggerItem } from '../../animations/variants';
@@ -38,9 +39,16 @@ export default function ChecklistTracker({ checklist, toggleChecklistItem, progr
               variants={staggerItem}
               className="checklist-item glass-card"
               onClick={() => toggleChecklistItem(item.key)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  toggleChecklistItem(item.key);
+                }
+              }}
               role="button"
               tabIndex={0}
               aria-label={`${item.text}: ${checklist[item.key] ? 'completed' : 'pending'}`}
+              aria-pressed={checklist[item.key]}
               id={`checklist-${item.key}`}
             >
               <span className="checklist-item-icon">{item.icon}</span>

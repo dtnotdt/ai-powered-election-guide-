@@ -1,12 +1,16 @@
+"use client";
 import { motion } from 'framer-motion';
 
 const NAV_ITEMS = [
   { id: 'story', icon: '🏠', label: 'Home' },
+  { id: 'timeline', icon: '🗓️', label: 'Timeline' },
+  { id: 'steps', icon: '🧭', label: 'Guide' },
+  { id: 'gallery', icon: '📸', label: 'Gallery' },
   { id: 'evm', icon: '⚡', label: 'EVM' },
   { id: 'chat', icon: '🤖', label: 'AI' },
   { id: 'maps', icon: '📍', label: 'Booth' },
+  { id: 'sandbox', icon: '🧪', label: 'What-If' },
   { id: 'checklist', icon: '✅', label: 'Track' },
-  { id: 'badges', icon: '🏆', label: 'Badges' },
 ];
 
 export default function FloatingNav({ setScreen, current }) {

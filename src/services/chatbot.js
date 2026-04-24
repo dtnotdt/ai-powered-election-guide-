@@ -3,6 +3,7 @@
  * Handles knowledge-base matching and Gemini API integration.
  */
 import { KNOWLEDGE_BASE } from '../utils/constants';
+import { getEnv } from '../utils/env';
 
 /**
  * Generate a chatbot response based on user input.
@@ -16,7 +17,7 @@ export async function getChatResponse(input) {
   const lowerInput = input.toLowerCase();
 
   // Try Gemini API if available
-  const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const geminiKey = getEnv('VITE_GEMINI_API_KEY');
   if (geminiKey) {
     try {
       const response = await callGeminiAPI(input, geminiKey);

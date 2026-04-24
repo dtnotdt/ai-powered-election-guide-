@@ -1,3 +1,4 @@
+"use client";
 import { motion } from 'framer-motion';
 import { BADGE_LIST } from '../../utils/constants';
 import { staggerContainer, staggerItem } from '../../animations/variants';

@@ -1,23 +1,33 @@
+"use client";
 import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Test that components render without crashing
 describe('Component Rendering', () => {
-  it('renders LandingScreen', async () => {
+  it('renders LandingScreen with user', async () => {
     const LandingScreen = (await import('../components/landing/LandingScreen')).default;
-    const { container } = render(<LandingScreen setScreen={() => {}} />);
+    const mockUser = { displayName: 'Test User', isAnonymous: false };
+    const { container } = render(<LandingScreen setScreen={() => {}} user={mockUser} />);
     expect(container.querySelector('.landing')).toBeInTheDocument();
     expect(screen.getAllByText(/VoteVerse/)[0]).toBeInTheDocument();
-    expect(screen.getAllByText(/India/)[0]).toBeInTheDocument();
+    expect(screen.getByText(/Welcome, Test/)).toBeInTheDocument();
+  });
+
+  it('renders LandingScreen with guest user', async () => {
+    const LandingScreen = (await import('../components/landing/LandingScreen')).default;
+    const mockUser = { isAnonymous: true };
+    render(<LandingScreen setScreen={() => {}} user={mockUser} />);
+    expect(screen.getByText(/Welcome, Guest/)).toBeInTheDocument();
   });
 
   it('renders landing action buttons', async () => {
     const LandingScreen = (await import('../components/landing/LandingScreen')).default;
-    render(<LandingScreen setScreen={() => {}} />);
+    render(<LandingScreen setScreen={() => {}} user={null} />);
     expect(screen.getByText(/Cinematic Story/)).toBeInTheDocument();
     expect(screen.getByText(/EVM Simulator/)).toBeInTheDocument();
     expect(screen.getByText(/AI Assistant/)).toBeInTheDocument();
+    expect(screen.getByText(/What-If Scenarios/)).toBeInTheDocument();
   });
 
   it('renders BadgesScreen', async () => {
@@ -41,13 +51,34 @@ describe('Component Rendering', () => {
     const { container } = render(<FloatingNav setScreen={() => {}} current="evm" />);
     expect(container.querySelector('.floating-nav')).toBeInTheDocument();
   });
+
+  it('renders AuthGate when loading', async () => {
+    const AuthGate = (await import('../components/auth/AuthGate')).default;
+    const { container } = render(<AuthGate loadingUser={true} />);
+    expect(container.querySelector('.auth-gate')).toBeInTheDocument();
+    expect(container.querySelector('.auth-loader')).toBeInTheDocument();
+  });
+
+  it('renders AuthGate sign-in form', async () => {
+    const AuthGate = (await import('../components/auth/AuthGate')).default;
+    render(<AuthGate loadingUser={false} />);
+    expect(screen.getByText(/Continue with Google/)).toBeInTheDocument();
+    expect(screen.getByText(/Continue as Guest/)).toBeInTheDocument();
+  });
+
+  it('renders ElectionSandbox', async () => {
+    const ElectionSandbox = (await import('../components/sandbox/ElectionSandbox')).default;
+    render(<ElectionSandbox setScreen={() => {}} />);
+    expect(screen.getByText(/What-If Scenarios/)).toBeInTheDocument();
+    expect(screen.getByText(/Lost Voter ID/)).toBeInTheDocument();
+  });
 });
 
 describe('Component Interactions', () => {
   it('landing screen navigates on button click', async () => {
     const LandingScreen = (await import('../components/landing/LandingScreen')).default;
     let navigatedTo = '';
-    render(<LandingScreen setScreen={(screen) => { navigatedTo = screen; }} />);
+    render(<LandingScreen setScreen={(screen) => { navigatedTo = screen; }} user={null} />);
 
     fireEvent.click(screen.getByText(/EVM Simulator/));
     expect(navigatedTo).toBe('evm');
@@ -74,5 +105,15 @@ describe('Component Interactions', () => {
 
     fireEvent.click(screen.getByText(/Register as Voter/));
     expect(toggledKey).toBe('register');
+  });
+
+  it('sandbox scenarios expand on click', async () => {
+    const ElectionSandbox = (await import('../components/sandbox/ElectionSandbox')).default;
+    render(<ElectionSandbox setScreen={() => {}} />);
+
+    fireEvent.click(screen.getByText(/Lost Voter ID on Election Day/));
+    // After clicking, the answer should be visible
+    expect(screen.getByText(/Aadhaar Card/)).toBeInTheDocument();
+    expect(screen.getByText(/Official ECI Guidelines/)).toBeInTheDocument();
   });
 });

@@ -1,27 +1,34 @@
+"use client";
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PARTIES } from '../../utils/constants';
 import { fadeInUp, staggerContainer, staggerItem } from '../../animations/variants';
+import { useTranslation } from 'react-i18next';
 
 export default function EVMSimulator({ setScreen, evmVote, setEvmVote, unlockBadge }) {
-  const [displayText, setDisplayText] = useState('READY FOR VOTE\nPress any party button to cast your vote');
+  const { t } = useTranslation();
+  const [displayText, setDisplayText] = useState('');
   const [confirmLight, setConfirmLight] = useState(false);
   const [voted, setVoted] = useState(false);
   const [selectedParty, setSelectedParty] = useState(null);
 
+  // Initialize display text using translation
+  const getInitialText = () => `${t('READY FOR VOTE')}\n${t('Press any party button to cast your vote')}`;
+  if (!displayText) setDisplayText(getInitialText());
+
   const handleVote = (party) => {
     if (voted) {
-      setDisplayText('⚠ You have already voted!\nEach citizen gets one vote per election.');
+      setDisplayText(`⚠ ${t('You have already voted!')}\n${t('Each citizen gets one vote per election.')}`);
       return;
     }
 
     setSelectedParty(party.id);
-    setDisplayText(`SELECTED: ${party.name}\n\nConfirming vote...`);
+    setDisplayText(`${t('SELECTED:')} ${party.name}\n\n${t('Confirming vote...')}`);
     setEvmVote(party);
 
     setTimeout(() => {
       setConfirmLight(true);
-      setDisplayText(`✓ VOTE RECORDED\n\nYou voted for: ${party.name}\nThank you for participating!`);
+      setDisplayText(`✓ ${t('VOTE RECORDED')}\n\n${t('You voted for:')} ${party.name}\n${t('Thank you for participating!')}`);
       unlockBadge('voter');
       setVoted(true);
 
@@ -48,7 +55,7 @@ export default function EVMSimulator({ setScreen, evmVote, setEvmVote, unlockBad
     setVoted(false);
     setEvmVote(null);
     setSelectedParty(null);
-    setDisplayText('READY FOR VOTE\nPress any party button to cast your vote');
+    setDisplayText(`${t('READY FOR VOTE')}\n${t('Press any party button to cast your vote')}`);
     setConfirmLight(false);
   };
 
@@ -61,10 +68,10 @@ export default function EVMSimulator({ setScreen, evmVote, setEvmVote, unlockBad
     >
       <div className="section-header">
         <h2 className="section-title">
-          <span className="text-gradient">EVM Simulator</span>
+          <span className="text-gradient">{t('EVM Simulator')}</span>
         </h2>
         <p className="section-subtitle">
-          Experience the Electronic Voting Machine — exactly as it works in real elections
+          {t('Experience the Electronic Voting Machine — exactly as it works in real elections')}
         </p>
       </div>
 
@@ -103,7 +110,7 @@ export default function EVMSimulator({ setScreen, evmVote, setEvmVote, unlockBad
           {/* Reset button */}
           <div style={{ marginTop: 'var(--space-xl)', textAlign: 'center' }}>
             <button className="btn btn-ghost btn-sm" onClick={handleReset} id="evm-reset">
-              🔄 Reset Simulator
+              🔄 {t('Reset Simulator')}
             </button>
           </div>
         </div>
@@ -119,11 +126,10 @@ export default function EVMSimulator({ setScreen, evmVote, setEvmVote, unlockBad
               style={{ marginTop: 'var(--space-xl)', padding: 'var(--space-xl)', textAlign: 'center' }}
             >
               <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '8px', color: 'var(--color-accent-emerald)' }}>
-                🛡️ VVPAT Verification
+                🛡️ {t('VVPAT Verification')}
               </h3>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', lineHeight: 1.7 }}>
-                In a real election, a VVPAT slip showing your selected candidate is displayed
-                for 7 seconds — allowing you to verify your vote was recorded correctly.
+                {t('In a real election, a VVPAT slip showing your selected candidate is displayed for 7 seconds — allowing you to verify your vote was recorded correctly.')}
               </p>
             </motion.div>
           )}

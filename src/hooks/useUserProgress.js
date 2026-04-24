@@ -1,9 +1,10 @@
 /**
  * Custom hook for managing user progress state.
  * Tracks checklist completion, badges, and EVM vote.
- * Persists to localStorage for session continuity.
+ * Persists to localStorage and Firestore.
  */
 import { useState, useEffect, useCallback } from 'react';
+import { onAuthChange, saveProgress, loadProgress } from '../services/firebase';
 
 const STORAGE_KEY = 'voteverse_progress';
 
@@ -21,7 +22,7 @@ const defaultBadges = {
   expert: false,
 };
 
-function loadProgress() {
+function loadLocalProgress() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) return JSON.parse(stored);
@@ -32,11 +33,37 @@ function loadProgress() {
 }
 
 export function useUserProgress() {
-  const stored = loadProgress();
+  const stored = loadLocalProgress();
 
   const [checklist, setChecklist] = useState(stored?.checklist || defaultChecklist);
   const [badges, setBadges] = useState(stored?.badges || defaultBadges);
   const [evmVote, setEvmVote] = useState(stored?.evmVote || null);
+  const [user, setUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (authUser) => {
+      if (authUser) {
+        setUser(authUser);
+        try {
+          const remoteProgress = await loadProgress(authUser.uid);
+          if (remoteProgress) {
+            setChecklist(prev => ({ ...prev, ...(remoteProgress.checklist || {}) }));
+            setBadges(prev => ({ ...prev, ...(remoteProgress.badges || {}) }));
+            if (remoteProgress.evmVote) setEvmVote(remoteProgress.evmVote);
+          }
+        } catch {
+          // Firestore unavailable, continue with local data
+        }
+      } else {
+        setUser(null);
+      }
+      setLoadingUser(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Persist on change
   useEffect(() => {
@@ -45,7 +72,11 @@ export function useUserProgress() {
     } catch {
       // Storage full or unavailable
     }
-  }, [checklist, badges, evmVote]);
+
+    if (user && !loadingUser) {
+      saveProgress(user.uid, { checklist, badges, evmVote });
+    }
+  }, [checklist, badges, evmVote, user, loadingUser]);
 
   const toggleChecklistItem = useCallback((key) => {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -62,10 +93,10 @@ export function useUserProgress() {
   // Auto-check expert badge
   useEffect(() => {
     const allComplete = Object.values(checklist).every(Boolean);
-    if (allComplete && badges.voter) {
+    if (allComplete && badges.voter && !badges.expert) {
       setBadges((prev) => ({ ...prev, expert: true }));
     }
-  }, [checklist, badges.voter]);
+  }, [checklist, badges.voter, badges.expert]);
 
   const progress = (Object.values(checklist).filter(Boolean).length / 4) * 100;
 
@@ -74,7 +105,10 @@ export function useUserProgress() {
     setBadges(defaultBadges);
     setEvmVote(null);
     localStorage.removeItem(STORAGE_KEY);
-  }, []);
+    if (user) {
+      saveProgress(user.uid, { checklist: defaultChecklist, badges: defaultBadges, evmVote: null });
+    }
+  }, [user]);
 
   return {
     checklist,
@@ -88,5 +122,7 @@ export function useUserProgress() {
     unlockBadge,
     progress,
     resetProgress,
+    user,
+    loadingUser,
   };
 }

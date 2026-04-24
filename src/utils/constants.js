@@ -3,6 +3,8 @@
  * Centralizes colors, party data, knowledge base, and configuration.
  */
 
+import { getEnv } from './env';
+
 export const COLORS = {
   saffron: '#FF9933',
   white: '#FFFFFF',
@@ -141,12 +143,12 @@ export const POLLING_BOOTHS = {
 };
 
 export const FIREBASE_CONFIG = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'demo-key',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'voteverse-demo.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'voteverse-demo',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'voteverse-demo.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '000000000000',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:000000000000:web:0000000000000000',
+  apiKey: getEnv('VITE_FIREBASE_API_KEY') || 'demo-key',
+  authDomain: getEnv('VITE_FIREBASE_AUTH_DOMAIN') || 'voteverse-demo.firebaseapp.com',
+  projectId: getEnv('VITE_FIREBASE_PROJECT_ID') || 'voteverse-demo',
+  storageBucket: getEnv('VITE_FIREBASE_STORAGE_BUCKET') || 'voteverse-demo.appspot.com',
+  messagingSenderId: getEnv('VITE_FIREBASE_MESSAGING_SENDER_ID') || '000000000000',
+  appId: getEnv('VITE_FIREBASE_APP_ID') || '1:000000000000:web:0000000000000000',
 };
 
-export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
+export const GOOGLE_MAPS_API_KEY = getEnv('VITE_GOOGLE_MAPS_API_KEY') || '';

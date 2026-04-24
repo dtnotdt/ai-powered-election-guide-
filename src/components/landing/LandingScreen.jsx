@@ -1,8 +1,19 @@
+"use client";
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer, staggerItem } from '../../animations/variants';
 import '../../styles/landing.css';
 
-export default function LandingScreen({ setScreen }) {
+import { useTranslation } from 'react-i18next';
+
+export default function LandingScreen({ setScreen, user }) {
+  const { t } = useTranslation();
+
+  const greeting = user?.displayName
+    ? `${t('Welcome')}, ${user.displayName.split(' ')[0]}!`
+    : user?.isAnonymous
+      ? t('Welcome, Guest!')
+      : t('Welcome');
+
   return (
     <div className="landing">
       {/* Background layers */}
@@ -20,7 +31,7 @@ export default function LandingScreen({ setScreen }) {
         {/* Status badge */}
         <motion.div className="landing-badge" variants={staggerItem}>
           <span className="landing-badge-dot" />
-          Interactive Election Education
+          {greeting}
         </motion.div>
 
         {/* Title */}
@@ -32,8 +43,7 @@ export default function LandingScreen({ setScreen }) {
 
         {/* Subtitle */}
         <motion.p className="landing-subtitle" variants={staggerItem}>
-          Your cinematic journey through the world's largest democracy.
-          Learn, simulate, and understand the power of your vote.
+          {t("Your cinematic journey through the world's largest democracy. Learn, simulate, and understand the power of your vote.")}
         </motion.p>
 
         {/* Actions */}
@@ -44,14 +54,14 @@ export default function LandingScreen({ setScreen }) {
               onClick={() => setScreen('story')}
               id="btn-story-mode"
             >
-              🎬 Cinematic Story
+              🎬 {t('Cinematic Story')}
             </button>
             <button
               className="btn btn-secondary btn-lg"
               onClick={() => setScreen('evm')}
               id="btn-evm-sim"
             >
-              ⚡ EVM Simulator
+              ⚡ {t('EVM Simulator')}
             </button>
           </div>
 
@@ -61,28 +71,35 @@ export default function LandingScreen({ setScreen }) {
               onClick={() => setScreen('reels')}
               id="btn-reels"
             >
-              📱 Quick Learn
+              📱 {t('Quick Learn')}
             </button>
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => setScreen('chat')}
               id="btn-chat"
             >
-              🤖 AI Assistant
+              🤖 {t('AI Assistant')}
             </button>
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => setScreen('maps')}
               id="btn-maps"
             >
-              📍 Find Booth
+              📍 {t('Find Booth')}
+            </button>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setScreen('sandbox')}
+              id="btn-sandbox"
+            >
+              🧪 {t('What-If Scenarios')}
             </button>
             <button
               className="btn btn-ghost btn-sm"
               onClick={() => setScreen('voice')}
               id="btn-voice"
             >
-              🎤 Voice Guide
+              🎤 {t('Voice Guide')}
             </button>
           </div>
         </motion.div>

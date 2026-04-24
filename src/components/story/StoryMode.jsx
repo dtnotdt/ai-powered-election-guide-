@@ -1,6 +1,9 @@
+"use client";
 import { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { fadeInUp, scaleIn } from '../../animations/variants';
+
+const AARAV_IMG = 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=400';
 
 export default function StoryMode({ setScreen, completeChecklistItem, unlockBadge }) {
   const [activeScene, setActiveScene] = useState(0);
@@ -9,7 +12,7 @@ export default function StoryMode({ setScreen, completeChecklistItem, unlockBadg
 
   const handleScroll = (e) => {
     const scrollTop = e.target.scrollTop;
-    const height = window.innerHeight;
+    const height = typeof window !== 'undefined' ? window.innerHeight : 1000;
     const newScene = Math.round(scrollTop / height);
     if (newScene !== activeScene && newScene < totalScenes) {
       setActiveScene(newScene);
@@ -33,26 +36,56 @@ export default function StoryMode({ setScreen, completeChecklistItem, unlockBadg
 
   const scrollToScene = (index) => {
     containerRef.current?.scrollTo({
-      top: index * window.innerHeight,
+      top: index * (typeof window !== 'undefined' ? window.innerHeight : 1000),
       behavior: 'smooth',
     });
   };
 
+  const Character = ({ action, delay = 0 }) => (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8, x: -50 }}
+      whileInView={{ opacity: 1, scale: 1, x: 0 }}
+      exit={{ opacity: 0, scale: 0.8, x: 50 }}
+      transition={{ duration: 0.8, delay, type: 'spring' }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        marginBottom: 'var(--space-md)',
+      }}
+    >
+      <div style={{
+        width: '120px',
+        height: '120px',
+        borderRadius: '50%',
+        overflow: 'hidden',
+        border: '3px solid var(--color-saffron)',
+        boxShadow: '0 8px 20px rgba(255,153,51,0.3)',
+        marginBottom: 'var(--space-sm)'
+      }}>
+        <img src={AARAV_IMG} alt="Aarav" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      </div>
+      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
+        {action}
+      </div>
+    </motion.div>
+  );
+
   return (
     <div className="story-container" ref={containerRef} onScroll={handleScroll}>
       {/* Exit Button */}
-      <button className="back-btn" onClick={() => setScreen('landing')}>
+      <button className="back-btn" onClick={() => setScreen('landing')} style={{ zIndex: 100 }}>
         ← Exit Story
       </button>
 
       {/* Progress Bar */}
       <div
         className="story-progress"
-        style={{ width: `${(activeScene / (totalScenes - 1)) * 100}%` }}
+        style={{ width: `${(activeScene / (totalScenes - 1)) * 100}%`, zIndex: 100 }}
       />
 
       {/* Navigation Dots */}
-      <div className="story-dots">
+      <div className="story-dots" style={{ zIndex: 100 }}>
         {Array.from({ length: totalScenes }).map((_, i) => (
           <div
             key={i}
@@ -74,8 +107,8 @@ export default function StoryMode({ setScreen, completeChecklistItem, unlockBadg
           variants={fadeInUp}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
         >
-          <div className="scene-avatar">👦🏽</div>
-          <h2 className="scene-heading" style={{ marginTop: '32px' }}>
+          <Character action="Aarav (18), College Student" />
+          <h2 className="scene-heading" style={{ marginTop: '16px' }}>
             Meet <span className="text-gradient">Aarav</span>
           </h2>
           <p className="scene-subtext">
@@ -100,12 +133,13 @@ export default function StoryMode({ setScreen, completeChecklistItem, unlockBadg
           variants={fadeInUp}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', zIndex: 10 }}
         >
+          <Character action="Checking Electoral Roll online..." />
           <h2 className="scene-heading">Step 1: Registration</h2>
           <p className="scene-subtext">
             First, Aarav checks if he's registered on the electoral roll.
           </p>
 
-          <motion.div variants={scaleIn} style={{ marginTop: '32px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <motion.div variants={scaleIn} style={{ marginTop: '24px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div className="scene-step-card">
               <span className="scene-step-icon">💻</span>
               <div>Visit <strong>voters.eci.gov.in</strong></div>
@@ -113,10 +147,6 @@ export default function StoryMode({ setScreen, completeChecklistItem, unlockBadg
             <div className="scene-step-card">
               <span className="scene-step-icon">📝</span>
               <div>Fill out <strong>Form 6</strong> online</div>
-            </div>
-            <div className="scene-step-card">
-              <span className="scene-step-icon">📸</span>
-              <div>Upload address proof &amp; photograph</div>
             </div>
             <div className="scene-step-card">
               <span className="scene-step-icon">🪪</span>
@@ -140,6 +170,7 @@ export default function StoryMode({ setScreen, completeChecklistItem, unlockBadg
           variants={fadeInUp}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', zIndex: 10 }}
         >
+          <Character action="Locating his polling booth..." />
           <h2 className="scene-heading">Step 2: Find Your Booth</h2>
           <p className="scene-subtext">
             Election day arrives. Where does Aarav go to cast his vote?
@@ -148,10 +179,10 @@ export default function StoryMode({ setScreen, completeChecklistItem, unlockBadg
           <motion.div
             variants={scaleIn}
             style={{
-              marginTop: '32px',
+              marginTop: '24px',
               width: '90%',
               maxWidth: '480px',
-              height: '280px',
+              height: '240px',
               borderRadius: 'var(--radius-xl)',
               overflow: 'hidden',
               position: 'relative',
@@ -207,15 +238,16 @@ export default function StoryMode({ setScreen, completeChecklistItem, unlockBadg
           variants={fadeInUp}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', zIndex: 10 }}
         >
+          <Character action="Inside the voting compartment..." />
           <h2 className="scene-heading">Step 3: The EVM</h2>
           <p className="scene-subtext">
-            Aarav enters the voting compartment and faces the Electronic Voting Machine.
+            Aarav faces the Electronic Voting Machine to make his choice.
           </p>
 
           <motion.div
             variants={scaleIn}
             style={{
-              marginTop: '32px',
+              marginTop: '24px',
               background: 'rgba(15, 15, 30, 0.9)',
               borderRadius: 'var(--radius-xl)',
               padding: '24px',
@@ -273,12 +305,13 @@ export default function StoryMode({ setScreen, completeChecklistItem, unlockBadg
           variants={fadeInUp}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}
         >
+          <Character action="Checking the VVPAT slip..." />
           <h2 className="scene-heading">Secure &amp; Verified</h2>
           <p className="scene-subtext">
-            His vote is encrypted in the EVM and verified via VVPAT — a paper trail for transparency.
+            His vote is encrypted and verified via VVPAT for transparency.
           </p>
 
-          <div style={{ marginTop: '40px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ marginTop: '24px', display: 'flex', alignItems: 'center', gap: '20px' }}>
             <motion.div
               initial={{ scale: 0 }}
               whileInView={{ scale: 1 }}
@@ -362,10 +395,11 @@ export default function StoryMode({ setScreen, completeChecklistItem, unlockBadg
           variants={fadeInUp}
           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', zIndex: 10 }}
         >
-          <h2 className="scene-heading">
+          <Character action="Proud to be a voter!" />
+          <h2 className="scene-heading" style={{ marginTop: '16px' }}>
             Every Vote <span className="text-gradient">Counts</span>
           </h2>
-          <p className="scene-subtext" style={{ marginBottom: '40px' }}>
+          <p className="scene-subtext" style={{ marginBottom: '24px' }}>
             Aarav just shaped the future of his nation. Now it's your turn.
           </p>
 
@@ -414,7 +448,7 @@ export default function StoryMode({ setScreen, completeChecklistItem, unlockBadg
           <button
             className="btn btn-primary"
             onClick={() => setScreen('evm')}
-            style={{ marginTop: '40px' }}
+            style={{ marginTop: '32px' }}
           >
             Try Interactive EVM ⚡
           </button>

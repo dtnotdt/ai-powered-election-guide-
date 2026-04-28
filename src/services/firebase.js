@@ -36,7 +36,7 @@ export function initFirebase() {
   if (app) return { app, auth, db, analytics, demoMode: false };
 
   if (!isFirebaseConfigured()) {
-    console.warn('[Firebase] Firebase not configured — running in demo mode. Auth will use local-only users.');
+    console.warn('⚠️ Firebase not configured — running in demo mode. Auth will use local-only users.');
     _isDemoMode = true;
     return { app: null, auth: null, db: null, analytics: null, demoMode: true };
   }
@@ -54,7 +54,7 @@ export function initFirebase() {
     }
     return { app, auth, db, analytics, demoMode: false };
   } catch (error) {
-    console.warn('[Firebase] Initialization failed:', { error: error.message });
+    console.warn('Firebase initialization failed:', error.message);
     _isDemoMode = true;
     return { app: null, auth: null, db: null, analytics: null, demoMode: true };
   }
@@ -99,7 +99,7 @@ export async function signInAnon() {
     const result = await signInAnonymously(fireAuth);
     return result.user;
   } catch (error) {
-    console.warn('[Firebase Auth] Anonymous sign-in failed:', { error: error.message });
+    console.warn('Anonymous sign-in failed:', error.message);
     // Fallback to demo mode
     const user = createDemoUser('guest');
     notifyDemoListeners(user);
@@ -129,7 +129,7 @@ export async function signInWithGoogle() {
     const result = await signInWithPopup(fireAuth, googleProvider);
     return result.user;
   } catch (error) {
-    console.error('[Firebase Auth] Google sign-in failed:', { error: error.message });
+    console.error('Google sign-in failed:', error.message);
     // If popup blocked or domain not authorized, fall back to demo
     const user = createDemoUser('google');
     notifyDemoListeners(user);
@@ -202,7 +202,7 @@ export async function saveProgress(userId, progressData) {
     }, { merge: true });
     return true;
   } catch (error) {
-    console.warn('[Firebase DB] Failed to save progress:', { userId, error: error.message });
+    console.warn('Failed to save progress:', error.message);
     return false;
   }
 }
@@ -218,7 +218,7 @@ export async function loadProgress(userId) {
     const snap = await getDoc(doc(fireDb, 'userProgress', userId));
     return snap.exists() ? snap.data() : null;
   } catch (error) {
-    console.warn('[Firebase DB] Failed to load progress:', { userId, error: error.message });
+    console.warn('Failed to load progress:', error.message);
     return null;
   }
 }

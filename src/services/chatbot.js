@@ -22,7 +22,8 @@ export async function getChatResponse(input) {
     try {
       const response = await callGeminiAPI(input, geminiKey);
       if (response) return response;
-    } catch {
+    } catch (error) {
+      console.error('[ChatBot API] Gemini request failed:', { input, error: error.message });
       // Fall through to local knowledge base
     }
   }
@@ -109,7 +110,10 @@ Rules:
     }
   );
 
-  if (!response.ok) return null;
+  if (!response.ok) {
+    console.warn('[ChatBot API] Non-OK response from Gemini:', { status: response.status });
+    return null;
+  }
 
   const data = await response.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || null;

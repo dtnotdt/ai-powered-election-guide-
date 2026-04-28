@@ -43,12 +43,14 @@ const STAGES = [
 ];
 
 export default function ElectionJourneyMap({ activeStageId, onNodeSelect }) {
-  const [internalActive, setInternalActive] = useState(activeStageId || "registration");
+  const [internalActive, setInternalActive] = useState(activeStageId ?? "registration");
 
   const handleSelect = (id) => {
     setInternalActive(id);
     if (onNodeSelect) onNodeSelect(id);
   };
+
+  const activeIndex = STAGES.findIndex((s) => s.id === internalActive);
 
   return (
     <div className="relative pl-6 py-4" role="navigation" aria-label="Election Journey Timeline">
@@ -58,7 +60,7 @@ export default function ElectionJourneyMap({ activeStageId, onNodeSelect }) {
       <div className="space-y-8">
         {STAGES.map((stage, index) => {
           const isActive = internalActive === stage.id;
-          const isPast = STAGES.findIndex((s) => s.id === internalActive) > index;
+          const isPast = activeIndex > index;
           const Icon = stage.icon;
 
           return (

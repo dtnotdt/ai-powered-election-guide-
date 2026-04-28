@@ -116,4 +116,39 @@ describe('Component Interactions', () => {
     expect(screen.getByText(/Aadhaar Card/)).toBeInTheDocument();
     expect(screen.getByText(/Official ECI Guidelines/)).toBeInTheDocument();
   });
+
+  it('PersonaSelector handles keyboard navigation', async () => {
+    const PersonaSelector = (await import('../components/election/PersonaSelector')).default;
+    let selected = '';
+    render(<PersonaSelector onSelect={(id) => { selected = id; }} initialId="first-time" />);
+    
+    const firstTimeBtn = screen.getByRole('radio', { name: /First-Time Voter/i });
+    firstTimeBtn.focus();
+    
+    // Test Right Arrow
+    fireEvent.keyDown(firstTimeBtn, { key: 'ArrowRight' });
+    expect(selected).toBe('returning');
+    
+    const returningBtn = screen.getByRole('radio', { name: /Returning Voter/i });
+    expect(document.activeElement).toBe(returningBtn);
+
+    // Test Left Arrow
+    fireEvent.keyDown(returningBtn, { key: 'ArrowLeft' });
+    expect(selected).toBe('first-time');
+  });
+
+  it('ElectionJourneyMap toggles nodes', async () => {
+    const ElectionJourneyMap = (await import('../components/election/ElectionJourneyMap')).default;
+    let selected = '';
+    render(<ElectionJourneyMap activeStageId="registration" onNodeSelect={(id) => { selected = id; }} />);
+    
+    // Initially registration should be expanded
+    expect(screen.getByText(/Ensure your name is on the electoral roll/)).toBeInTheDocument();
+    
+    // Click next node
+    const campaignBtn = screen.getByRole('button', { name: /Election Campaign/i });
+    fireEvent.click(campaignBtn);
+    expect(selected).toBe('campaign');
+    expect(screen.getByText(/Parties release manifestos/)).toBeInTheDocument();
+  });
 });

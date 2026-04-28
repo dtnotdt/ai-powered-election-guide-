@@ -1,15 +1,20 @@
 "use client";
 import { useState, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import dynamic from 'next/dynamic';
+
 import { useUserProgress } from './hooks/useUserProgress';
 import { logout } from './services/firebase';
+import './i18n'; // import the configuration
 
-// Eager-load auth gate and landing for instant first paint
+// Core Components
 import AuthGate from './components/auth/AuthGate';
 import LandingScreen from './components/landing/LandingScreen';
 import FloatingNav from './components/navigation/FloatingNav';
-
-import dynamic from 'next/dynamic';
+import UserPill from './components/auth/UserPill';
+import LanguageToggle from './components/navigation/LanguageToggle';
+import LoadingFallback from './components/ui/LoadingFallback';
 
 // Lazy-load heavy screens for performance (disable SSR for heavy canvas/maps libraries)
 const StoryMode = dynamic(() => import('./components/story/StoryMode'), { ssr: false });
@@ -26,94 +31,7 @@ const VotingTimeline = dynamic(() => import('./components/timeline/VotingTimelin
 const VotingSteps = dynamic(() => import('./components/steps/VotingSteps'), { ssr: false });
 const ElectionSandbox = dynamic(() => import('./components/sandbox/ElectionSandbox'), { ssr: false });
 
-// Loading fallback
-function LoadingFallback() {
-  return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100vh',
-      background: 'var(--color-bg-primary)',
-    }}>
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-        style={{
-          width: '40px',
-          height: '40px',
-          borderRadius: '50%',
-          border: '3px solid var(--color-border)',
-          borderTopColor: 'var(--color-saffron)',
-        }}
-      />
-    </div>
-  );
-}
 
-// User profile pill — shown in all screens
-function UserPill({ user, onLogout }) {
-  if (!user) return null;
-
-  const displayName = user.displayName || (user.isAnonymous ? 'Guest' : 'Voter');
-  const photoURL = user.photoURL;
-  const initial = displayName.charAt(0).toUpperCase();
-
-  return (
-    <button
-      className="user-pill"
-      onClick={onLogout}
-      title={`Signed in as ${displayName}. Click to sign out.`}
-      id="user-pill"
-    >
-      <div className="user-pill-avatar">
-        {photoURL ? (
-          <img src={photoURL} alt="" referrerPolicy="no-referrer" />
-        ) : (
-          initial
-        )}
-      </div>
-      <span className="user-pill-name">{displayName}</span>
-    </button>
-  );
-}
-
-// Language Toggle Component
-import { useTranslation } from 'react-i18next';
-import './i18n'; // import the configuration
-
-function LanguageToggle() {
-  const { i18n } = useTranslation();
-  
-  const toggleLang = () => {
-    const newLang = i18n.language === 'en' ? 'hi' : 'en';
-    i18n.changeLanguage(newLang);
-  };
-
-  return (
-    <button
-      onClick={toggleLang}
-      style={{
-        position: 'fixed',
-        top: '20px',
-        left: '20px',
-        background: 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: '20px',
-        padding: '8px 16px',
-        color: 'white',
-        fontWeight: 'bold',
-        cursor: 'pointer',
-        zIndex: 1000,
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-      }}
-      title="Toggle Language"
-    >
-      {i18n.language === 'en' ? '🇮🇳 हिन्दी' : '🇬🇧 English'}
-    </button>
-  );
-}
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('landing');
@@ -148,59 +66,27 @@ export default function App() {
     return <AuthGate loadingUser={true} />;
   }
 
-  // ── PROTECTED APP ──
+  // ── ROUTE MAP ──
+  const ScreenComponents = {
+    landing: () => <LandingScreen setScreen={setCurrentScreen} user={user} />,
+    story: () => <StoryMode setScreen={setCurrentScreen} completeChecklistItem={completeChecklistItem} unlockBadge={unlockBadge} />,
+    reels: () => <ReelsMode setScreen={setCurrentScreen} />,
+    evm: () => <EVMSimulator setScreen={setCurrentScreen} evmVote={evmVote} setEvmVote={setEvmVote} unlockBadge={unlockBadge} />,
+    impact: () => <ImpactSimulator setScreen={setCurrentScreen} />,
+    chat: () => <ChatBot setScreen={setCurrentScreen} />,
+    checklist: () => <ChecklistTracker checklist={checklist} toggleChecklistItem={toggleChecklistItem} progress={progress} />,
+    maps: () => <MapsLocation setScreen={setCurrentScreen} />,
+    voice: () => <VoiceAssistant setScreen={setCurrentScreen} />,
+    badges: () => <BadgesScreen badges={badges} />,
+    gallery: () => <VotingGallery setScreen={setCurrentScreen} />,
+    timeline: () => <VotingTimeline setScreen={setCurrentScreen} />,
+    steps: () => <VotingSteps setScreen={setCurrentScreen} />,
+    sandbox: () => <ElectionSandbox setScreen={setCurrentScreen} />
+  };
+
   const renderScreen = () => {
-    switch (currentScreen) {
-      case 'landing':
-        return <LandingScreen setScreen={setCurrentScreen} user={user} />;
-      case 'story':
-        return (
-          <StoryMode
-            setScreen={setCurrentScreen}
-            completeChecklistItem={completeChecklistItem}
-            unlockBadge={unlockBadge}
-          />
-        );
-      case 'reels':
-        return <ReelsMode setScreen={setCurrentScreen} />;
-      case 'evm':
-        return (
-          <EVMSimulator
-            setScreen={setCurrentScreen}
-            evmVote={evmVote}
-            setEvmVote={setEvmVote}
-            unlockBadge={unlockBadge}
-          />
-        );
-      case 'impact':
-        return <ImpactSimulator setScreen={setCurrentScreen} />;
-      case 'chat':
-        return <ChatBot setScreen={setCurrentScreen} />;
-      case 'checklist':
-        return (
-          <ChecklistTracker
-            checklist={checklist}
-            toggleChecklistItem={toggleChecklistItem}
-            progress={progress}
-          />
-        );
-      case 'maps':
-        return <MapsLocation setScreen={setCurrentScreen} />;
-      case 'voice':
-        return <VoiceAssistant setScreen={setCurrentScreen} />;
-      case 'badges':
-        return <BadgesScreen badges={badges} />;
-      case 'gallery':
-        return <VotingGallery setScreen={setCurrentScreen} />;
-      case 'timeline':
-        return <VotingTimeline setScreen={setCurrentScreen} />;
-      case 'steps':
-        return <VotingSteps setScreen={setCurrentScreen} />;
-      case 'sandbox':
-        return <ElectionSandbox setScreen={setCurrentScreen} />;
-      default:
-        return <LandingScreen setScreen={setCurrentScreen} user={user} />;
-    }
+    const Component = ScreenComponents[currentScreen] || ScreenComponents.landing;
+    return Component();
   };
 
   return (

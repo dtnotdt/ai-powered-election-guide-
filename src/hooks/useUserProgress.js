@@ -33,11 +33,9 @@ function loadLocalProgress() {
 }
 
 export function useUserProgress() {
-  const stored = loadLocalProgress();
-
-  const [checklist, setChecklist] = useState(stored?.checklist || defaultChecklist);
-  const [badges, setBadges] = useState(stored?.badges || defaultBadges);
-  const [evmVote, setEvmVote] = useState(stored?.evmVote || null);
+  const [checklist, setChecklist] = useState(() => loadLocalProgress()?.checklist || defaultChecklist);
+  const [badges, setBadges] = useState(() => loadLocalProgress()?.badges || defaultBadges);
+  const [evmVote, setEvmVote] = useState(() => loadLocalProgress()?.evmVote || null);
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
